@@ -2,21 +2,21 @@
 - name: Install apache2
   apt: name=apache2 update_cache=yes state=latest
 
-# Nginx Configuration
+# Apache2 Configuration
 - name: Sets Apache2 conf file
   template:
     src: "apache2.conf"
-    dest: "/etc/nginx/sites-available/{{ http_conf }}"
+    dest: "/etc/apache2/sites-available/{{ http_conf }}"
 
 - name: Enables new site
   file:
-    src: "/etc/nginx/sites-available/{{ http_conf }}"
-    dest: "/etc/nginx/sites-enabled/{{ http_conf }}"
+    src: "/etc/apache2/sites-available/{{ http_conf }}"
+    dest: "/etc/apache2/sites-enabled/{{ http_conf }}"
     state: link
   notify: Reload apache2
 
 - name: Removes "default" site
   file:
-    path: "/etc/nginx/sites-enabled/default"
+    path: "/etc/apache2/sites-enabled/default"
     state: absent
   notify: Reload apache2

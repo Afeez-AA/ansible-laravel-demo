@@ -1,6 +1,8 @@
 ---
 become: true
 
+remote_user: ubuntu
+
 # MySQL Setup
 mysql_root_password: MYSQL_ROOT_PASSWORD
 mysql_app_db: laravel_db

@@ -1,19 +1,8 @@
 ---
-- name: install python, pip etc
-      shell: apt-get -y install "{{ item }}"
-      with_items:
-        - pip 
-        - python3-dev 
-        - default-libmysqlclient-dev 
-        - build-essential
+- name: Install MariaDB & mysql-python prereq
+  apt: name={{ item }} update_cache=yes state=latest
+  loop: [ 'mariadb-server', 'python3-pymysql' ]
 
-    - name: Install MySQL server
-      shell: apt-get -y install mysql-server
-
-    - name: pip install mysqlclient
-      shell: pip install mysqlclient
-
-# Mysql Configuration
 - name: Sets the root password
   mysql_user:
     name: root
