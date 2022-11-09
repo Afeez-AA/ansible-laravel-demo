@@ -17,6 +17,8 @@
         rsync_opts:
           - "--no-motd"
           - "--exclude=.git,vendor,tests,storage/logs/*,storage/framework/sessions/*,storage/framework/cache/*"
+    - name: Install setfacl
+      command: apt-get install acl
 
     - name: Set up additional directory permissions for www-data user on storage folder
       acl:
@@ -51,16 +53,26 @@
     - name: Set up app storage link
       command: "/usr/bin/php {{ remote_www_root }}/{{ app_root_dir }}/artisan storage:link"
       tags: [ 'laravel', 'artisan:storage' ]
-
+    - name: Run the php artisan commands
+      command: chdir=/var/www/myapp {{ item }}
+      with_items:
+        - php artisan config:cache
+        - php artisan migrate:fresh
+      become: true
     - name: Run Migrations + Seeders
-      command: "/usr/bin/php {{ remote_www_root }}/{{ app_root_dir }}/artisan migrate --seed"
+      command: "/usr/bin/php {{ remote_www_root }}/{{ app_root_dir }} migrate --seed"
       tags: [ 'laravel', 'artisan:migrate' ]
 
-    - name: Enable a2enmod rewrite
-      ansible.builtin.command: a2enmod rewrite
-    - name: Disable default apache page and enable laravel page
-      ansible.builtin.command: a2dissite 000-default.conf
-    - name: Enable laravel page
-      ansible.builtin.command: a2ensite postgre_laravel.conf
     - name: Restart apache web server
       ansible.builtin.command: systemctl reload apache2
+     
+    - name: Copy the PostgreSQL Script
+      copy:
+        src: script.sh
+        dest: /home/ubuntu
+        mode: '0775'
+        owner: ubuntu
+        group: ubuntu
+  
+    - name: Execute the PostgreSQL Script
+      command: sh /home/ubuntu/script.sh

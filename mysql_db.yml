@@ -1,70 +1,49 @@
----
-- name: Laravel Deployment Using Ansible
-  hosts: node
-  remote_user: ubuntu
-  become: true
-
+- name: setup Mysql and remote login
+  become: yes
+  hosts: all
   tasks:
-  - name: Install Python3
-    apt: name=python3 state=latest
+    - name: Installing Mysql and dependencies
+      package:
+         name: "{{item}}"
+         state: present
+         update_cache: yes
+      loop:
+        - mysql-server
+        - mysql-client
+        - python3-mysqldb
+        - libmysqlclient-dev
+      become: yes
+       
+    - name: start and enable mysql service
+      service:
+         name: mysql
+         state: started
+         enabled: yes
 
-  - name: Install Pip
-    apt: name=pip state=latest
+    - name: creating mysql user
+      mysql_user:
+         name: laravel_user
+         password: admin123
+         priv: '*.*:ALL'
+         host: '%'
+         state: present
+    
+    - name: creating remote_server_db 
+      mysql_db:
+         name: laravel_db
+         state: present
+    
+    - name: Enable remote login to mysql
+      lineinfile:
+         path: /etc/mysql/mysql.conf.d/mysqld.cnf
+         regexp: '^bind-address'
+         line: 'bind-address = 0.0.0.0'
+         backup: yes
+      notify:
+        - Restart mysql
 
-  - name: Install MySQL Server
-    apt:
-     name: mysql-server
-     state: latest
-
-  - name: Install MySQL Client
-    apt:
-     name: mysql-client
-     state: latest
-
-  - name: Install PyMySQL Library
-     pip:
-     name: pymysql
-     state: latest
-
-  - name: Start mySQL
-    service:
-      name: mysql
-      enabled: true
-      state: started
-
-  - name: Create ~/.my.cnf
-    file:
-      path: ~/.my.cnf
-      state: touch
-
-  - name: Insert into ~/.my.cnf
-    blockinfile:
-      path: ~/.my.cnf
-      block: |
-        [client]
-        user={{ mysql_user }}
-        password={{ mysql_app_pass }}
-  
-  - name: sql query flush
-    command:  mysql -u root --execute="FLUSH PRIVILEGES"
-
-  - name: Create a Database
-    mysql_db:
-      login_user: 'root'
-      login_password: "{{ mysql_app_pass }}"
-      name: "{{ mysql_app_db }}"
-      state: present
-
-  - name: Restart MySQL
-    service: name=mysql state=restarted
-
-  - name: Copy the PostgreSQL Script
-      copy:
-      src: exam.sh
-      dest: /home/ubuntu
-      mode: '0775'
-      owner: ubuntu
-      group: ubuntu
-  
-  - name: Execute the PostgreSQL Script
-    command: sh /home/ubuntu/script.sh
+  handlers:
+    - name: Restart mysql
+      service:
+        name: mysql
+        state: restarted
