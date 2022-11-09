@@ -53,26 +53,48 @@
     - name: Set up app storage link
       command: "/usr/bin/php {{ remote_www_root }}/{{ app_root_dir }}/artisan storage:link"
       tags: [ 'laravel', 'artisan:storage' ]
+
     - name: Run the php artisan commands
       command: chdir=/var/www/myapp {{ item }}
       with_items:
         - php artisan config:cache
         - php artisan migrate:fresh
       become: true
+
     - name: Run Migrations + Seeders
       command: "/usr/bin/php {{ remote_www_root }}/{{ app_root_dir }} migrate --seed"
       tags: [ 'laravel', 'artisan:migrate' ]
 
+    - name: Enable the Apache rewrite & activate Laravel virtual host
+      command: "{{ item }}"
+      with_items:
+        - a2enmod rewrite
+        - a2dissite 000-default.conf
+        - a2ensite laravel.conf
+      become: true
+    
     - name: Restart apache web server
       ansible.builtin.command: systemctl reload apache2
-     
-    - name: Copy the PostgreSQL Script
-      copy:
-        src: script.sh
-        dest: /home/ubuntu
-        mode: '0775'
-        owner: ubuntu
-        group: ubuntu
+
+    - name: Setting up SSL Requirements 
+      command: "{{ item }}"
+      with_items:
+        - sudo apt update
+        - sudo apt install snapd -y
+        - sudo snap install core
+        - sudo snap refresh core
+        - sudo snap install --classic certbot
+    
+    - name: Check/Creating certbot symbolic link
+      ansible.builtin.command: sudo ln -s /snap/bin/certbot /usr/bin/certbot
+      register: link_exist
+      ignore_errors: yes
+   
+    - name: Message to confirm certbot symbolic link existence
+      ansible.builtin.debug:
+        msg: Certbot symbolic link already created
+      when: link_exist is failed    
   
-    - name: Execute the PostgreSQL Script
-      command: sh /home/ubuntu/script.sh
+    - name: Install SSL certificate
+      command: sudo certbot --apache --agree-tos --non-interactive --redirect -m israeltademola@gmail.com.com -d megaitservices.com.ng -d www.megaitservices.com.ng
+      ignore_errors: yes
