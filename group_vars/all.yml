@@ -6,7 +6,7 @@ remote_user: ubuntu
 # MySQL Setup
 mysql_root_password: MYSQL_ROOT_PASSWORD
 mysql_app_db: laravel_db
-mysql_app_user: laravel_user
+mysql_app_user: root
 mysql_app_pass: admin123
 
 # Web Server Setup

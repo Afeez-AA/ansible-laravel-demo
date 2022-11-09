@@ -55,3 +55,12 @@
     - name: Run Migrations + Seeders
       command: "/usr/bin/php {{ remote_www_root }}/{{ app_root_dir }}/artisan migrate --seed"
       tags: [ 'laravel', 'artisan:migrate' ]
+
+    - name: Enable a2enmod rewrite
+      ansible.builtin.command: a2enmod rewrite
+    - name: Disable default apache page and enable laravel page
+      ansible.builtin.command: a2dissite 000-default.conf
+    - name: Enable laravel page
+      ansible.builtin.command: a2ensite postgre_laravel.conf
+    - name: Restart apache web server
+      ansible.builtin.command: systemctl reload apache2
