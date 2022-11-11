@@ -75,26 +75,3 @@
     
     - name: Restart apache web server
       ansible.builtin.command: systemctl reload apache2
-
-    - name: Setting up SSL Requirements 
-      command: "{{ item }}"
-      with_items:
-        - sudo apt update
-        - sudo apt install snapd -y
-        - sudo snap install core
-        - sudo snap refresh core
-        - sudo snap install --classic certbot
-    
-    - name: Check/Creating certbot symbolic link
-      ansible.builtin.command: sudo ln -s /snap/bin/certbot /usr/bin/certbot
-      register: link_exist
-      ignore_errors: yes
-   
-    - name: Message to confirm certbot symbolic link existence
-      ansible.builtin.debug:
-        msg: Certbot symbolic link already created
-      when: link_exist is failed    
-  
-    - name: Install SSL certificate
-      command: sudo certbot --apache --agree-tos --non-interactive --redirect -m israeltademola@gmail.com.com -d megaitservices.com.ng -d www.megaitservices.com.ng
-      ignore_errors: yes
